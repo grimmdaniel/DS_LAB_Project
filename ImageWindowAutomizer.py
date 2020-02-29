@@ -6,9 +6,13 @@ path = '/Users/grimmdaniel/Developer/DataScience/DS_Lab_project/raw_images/'
 for (dirpath, dirnames, filenames) in walk(path):
     f.extend(filenames)
     break
+    
+if '.DS_Store' in f:
+    f.remove('.DS_Store')    
+    
 file = open('window_location.csv','w')
 
-f = f[0:5]
+#f = f[0:5]
 
 currentImageName = '' 
 leftPressed = False
