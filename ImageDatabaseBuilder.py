@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import matplotlib.pyplot as plt
 import sys
+import datetime
 
 window_size = 106
 border_size = 3
@@ -34,7 +35,9 @@ def processImageWindows(window,is_inside):
         for j in range(border_size,window_size-border_size):
             pixel_region = window[i-border_size:i+border_size+1,j-border_size:j+border_size+1]
             result = processPixelsWithRegions(pixel_region)
-            writeResultToFile(result,is_inside)
+            if result != '':
+                writeResultToFile(result,is_inside)
+            
     
 def processPixelsWithRegions(pixel_region):
     #image processing methods here...
@@ -47,7 +50,14 @@ def processPixelsWithRegions(pixel_region):
     center_red_pixel = center_of_pixel_region[:,:,0:1].item()
     center_green_pixel = center_of_pixel_region[:,:,1:2].item()
     center_blue_pixel = center_of_pixel_region[:,:,2:3].item()
-    
+
+    std_red = np.std(red_channel)
+    std_green = np.std(green_channel)
+    std_blue = np.std(blue_channel)
+
+    if std_red == 0 or std_green == 0 or std_blue == 0:
+        return ''
+
     #correlation between Red and Green channels
     corr_rg = np.corrcoef(red_channel,green_channel)[0][1]
     
@@ -58,7 +68,7 @@ def processPixelsWithRegions(pixel_region):
     corr_gb = np.corrcoef(green_channel,blue_channel)[0][1]
   
     #means of rgb channels + standard deviation of rgb channels
-    result = str(center_red_pixel) + ',' + str(center_green_pixel) + ',' + str(center_blue_pixel) + ',' + str(np.mean(red_channel)) + ',' + str(np.mean(green_channel)) + ',' + str(np.mean(blue_channel)) + ',' + str(np.std(red_channel)) + ',' + str(np.std(green_channel)) + ',' + str(np.std(blue_channel))  + ',' + str(corr_rg)  + ',' + str(corr_rb)  + ',' + str(corr_gb)
+    result = str(center_red_pixel) + ',' + str(center_green_pixel) + ',' + str(center_blue_pixel) + ',' + str(np.mean(red_channel)) + ',' + str(np.mean(green_channel)) + ',' + str(np.mean(blue_channel)) + ',' + str(std_red) + ',' + str(std_green) + ',' + str(std_blue)  + ',' + str(corr_rg)  + ',' + str(corr_rb)  + ',' + str(corr_gb)
     return result
 
 def progress(count, total, suffix=''):
@@ -80,7 +90,8 @@ def writeResultToFile(result,is_inside):
         output_file.write(result+',1\n')
     else:
         output_file.write(result+',0\n')
-    
+
+t1=datetime.datetime.utcnow()
 output_file = createFileForOutput()
 output_file.write('red_pixel,green_pixel,blue_pixel,mean_red,mean_green,mean_blue,std_red,std_green,std_blue,corr_rg,corr_rb,corr_gb,inside\n')
 file = readImageWindowLocationsFile()
@@ -99,3 +110,5 @@ for line in file:
 file.close()
 output_file.close()
 print('Database exported successfully')
+t2=datetime.datetime.utcnow()
+print('Elapsed time: ' + str(t2-t1))
