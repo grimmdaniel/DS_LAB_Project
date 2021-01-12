@@ -1,14 +1,16 @@
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 import sys
 import datetime
+import math
+import typing
 
-window_size = 106
-border_size = 3
 
-def readImageWindowLocationsFile():
-    file = open('window_location.csv','r')
+window_size: int = 106
+border_size: int = 3
+
+def readImageWindowLocationsFile() -> typing.IO:
+    file = open('raw_images_dataset/window_location.csv','r')
     return file
 
 def createWindowLocations(line):
@@ -17,7 +19,7 @@ def createWindowLocations(line):
 
 def openImageWindow(image):
     image_name = image[0]
-    img = cv2.imread('raw_images/' + image_name)
+    img = cv2.imread('raw_images_dataset/raw_images_train/' + image_name)
     fix_img = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
     
     window_inside_x = image[1][0]
@@ -37,14 +39,49 @@ def processImageWindows(window,is_inside):
             result = processPixelsWithRegions(pixel_region)
             if result != '':
                 writeResultToFile(result,is_inside)
-            
+                
+def calculateStandardDeviationHistogram(counts,bins):
     
+    data = [(b,c) for b,c in zip(bins,counts) if c != 0]
+    
+    N = 0.0
+    x_hat = 0.0
+    for b,c in data:
+        N += c
+        x_hat += b * c
+    x_hat = x_hat/N
+    
+    res = 0.0
+    for b,c in data:
+        res += c*math.pow((b-x_hat),2)
+    final = math.sqrt(res/N)
+    return final
+            
 def processPixelsWithRegions(pixel_region):
     #image processing methods here...
     # means of R G B channels
     red_channel = np.reshape(pixel_region[:,:,0], -1)
     green_channel = np.reshape(pixel_region[:,:,1], -1)
     blue_channel = np.reshape(pixel_region[:,:,2], -1)
+    
+    #reshaped_red = red_channel.reshape((7,7,1))
+    #histr = cv2.calcHist([reshaped_red],[0],None,[256],[0,256])
+    
+    
+    #histr = np.histogram(red_channel, bins=bins)
+    #std_hist_r = np.std(histr[0])
+    
+    
+    bins = [x for x in range(0,256)]
+    
+    #hp_red = np.histogram(red_channel, bins=bins)
+    #std_hist_r = calculateStandardDeviationHistogram(hp_red[0],hp_red[1])
+    
+    #hp_green = np.histogram(green_channel, bins=bins)
+    #std_hist_g = calculateStandardDeviationHistogram(hp_green[0],hp_green[1])
+    
+    #hs_blue = np.histogram(blue_channel, bins=bins)
+    #std_hist_b = calculateStandardDeviationHistogram(hs_blue[0],hs_blue[1])
     
     center_of_pixel_region = pixel_region[border_size:border_size+1,border_size:border_size+1,:]
     center_red_pixel = center_of_pixel_region[:,:,0:1].item()
@@ -56,7 +93,7 @@ def processPixelsWithRegions(pixel_region):
     std_blue = np.std(blue_channel)
 
     if std_red == 0 or std_green == 0 or std_blue == 0:
-        return ''
+        return str(round(center_red_pixel,6)) + ',' + str(round(center_green_pixel,6)) + ',' + str(round(center_blue_pixel,6)) + ',0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0'
 
     #correlation between Red and Green channels
     corr_rg = np.corrcoef(red_channel,green_channel)[0][1]
@@ -68,7 +105,7 @@ def processPixelsWithRegions(pixel_region):
     corr_gb = np.corrcoef(green_channel,blue_channel)[0][1]
   
     #means of rgb channels + standard deviation of rgb channels
-    result = str(center_red_pixel) + ',' + str(center_green_pixel) + ',' + str(center_blue_pixel) + ',' + str(np.mean(red_channel)) + ',' + str(np.mean(green_channel)) + ',' + str(np.mean(blue_channel)) + ',' + str(std_red) + ',' + str(std_green) + ',' + str(std_blue)  + ',' + str(corr_rg)  + ',' + str(corr_rb)  + ',' + str(corr_gb)
+    result = str(round(center_red_pixel,6)) + ',' + str(round(center_green_pixel,6)) + ',' + str(round(center_blue_pixel,6)) + ',' + str(round(np.mean(red_channel),6)) + ',' + str(round(np.mean(green_channel),6)) + ',' + str(round(np.mean(blue_channel),6)) + ',' + str(round(std_red,6)) + ',' + str(round(std_green,6)) + ',' + str(round(std_blue,6))  + ',' + str(round(corr_rg,6))  + ',' + str(round(corr_rb,6))  + ',' + str(round(corr_gb,6))
     return result
 
 def progress(count, total, suffix=''):
@@ -82,7 +119,7 @@ def progress(count, total, suffix=''):
     sys.stdout.flush()
     
 def createFileForOutput():
-    o_file = open('output.csv','w+')
+    o_file = open('raw_images_dataset/output_train_set.csv','w+')
     return o_file
     
 def writeResultToFile(result,is_inside):

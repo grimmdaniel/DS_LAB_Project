@@ -1,16 +1,17 @@
 from os import walk
 import cv2
+from sys import exit
 
 f = []
-path = '/Users/grimmdaniel/Developer/DataScience/DS_Lab_project/raw_images/'
+path = '/Users/grimmdaniel/Developer/DataScience/DS_Lab_project/raw_images_dataset/raw_images_train'
 for (dirpath, dirnames, filenames) in walk(path):
-    f.extend(filenames)
+    for filename in filenames:
+        if '.jpg' in filename or '.png' in filename or '.JPG' in filename or '.PNG' in filename:
+            f.append(filename)
     break
     
-if '.DS_Store' in f:
-    f.remove('.DS_Store')    
     
-file = open('window_location.csv','w')
+file = open('raw_images_dataset/window_location.csv','w')
 
 #f = f[0:5]
 
@@ -18,6 +19,7 @@ currentImageName = ''
 leftPressed = False
 windowName = 'imageWindow'
 
+#Left press in, right press out
 def getClickLocation(event,x,y,flags,param):
     
     global leftPressed
@@ -45,7 +47,7 @@ def displayImage(files):
         currentImageName = currentFileName
         del files[-1]
         
-        img = cv2.imread('raw_images/'+currentFileName)
+        img = cv2.imread(path + '/' +currentFileName)
         cv2.imshow(windowName,img)
 
 
